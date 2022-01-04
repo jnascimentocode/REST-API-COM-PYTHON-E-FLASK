@@ -2,6 +2,7 @@ from typing import ParamSpecArgs
 from flask_restful import Resource, reqparse
 from models.hotel import HotelModel
 from flask_jwt_extended import jwt_required
+from models.site import SiteModel
 from resources.filtros import *
 import sqlite3
 
@@ -39,7 +40,8 @@ class Hoteis(Resource):
             'nome':  linha[1],
             'estrelas': linha[2],
             'diaria': linha[3],
-            'cidade': linha[4],    
+            'cidade': linha[4],   
+            'site_id': linha[5]
             })
 
         return {'hoteis': hoteis}
@@ -51,6 +53,7 @@ class Hotel(Resource):
     argumentos.add_argument('estrelas', type=float, required=True, help="The field 'estrelas' cannot be left blank")
     argumentos.add_argument('diaria')
     argumentos.add_argument('cidade')
+    argumentos.add_argument('site_id', type=int, required=True, help="Every hotel needs to be linked with site")
 
     def get(self, hotel_id):
         hotel = HotelModel.find_hotel(hotel_id)
@@ -66,6 +69,10 @@ class Hotel(Resource):
                 
         dados = Hotel.argumentos.parse_args()
         hotel = HotelModel(hotel_id, **dados)
+
+        if not SiteModel.find_by_id(dados.get('site_id')):
+            return {'message': 'The hotel must be associated to a valid site id'}, 400
+
         try:
             hotel.save_hotel()
         except:
